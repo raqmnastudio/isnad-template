@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, LogOut, Settings, Languages } from "lucide-react";
+import { Menu, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -36,7 +36,7 @@ export function Topbar({
   onMenuClick,
 }: TopbarProps) {
   const router = useRouter();
-  const { t, toggleLang } = useLanguage();
+  const { t } = useLanguage();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -64,16 +64,6 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleLang}
-          className="gap-1.5"
-        >
-          <Languages className="h-4 w-4" />
-          {t.topbar.language}
-        </Button>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-full ps-1 pe-2 py-1 transition-colors hover:bg-muted">
