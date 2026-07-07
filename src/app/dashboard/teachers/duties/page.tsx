@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSchoolId } from "@/lib/school";
 import { DutiesClient } from "@/components/duties/duties-client";
+import { BackLink } from "@/components/layout/back-link";
 
 export interface TeacherOption {
   id: string;
@@ -107,6 +108,7 @@ export default async function DutiesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
+        <BackLink href="/dashboard/teachers" label="رجوع إلى المعلمات" />
         <h1 className="text-2xl font-extrabold text-navy">إدارة المناوبات التفصيلية</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           أضيفي الفئات الأساسية، وتحتها الأنواع الفرعية بوقتها ومكانها، ثم
