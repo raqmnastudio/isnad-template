@@ -11,7 +11,7 @@ create table if not exists public.stages (
   section_type text not null check (section_type in ('numbers', 'letters')),
   periods_per_day integer not null default 7,
   friday_periods integer not null default 0,
-  working_days text[] not null default array['sun','mon','tue','wed','thu'],
+  working_days text[] not null default array['mon','tue','wed','thu','fri'],
   created_at timestamptz not null default now()
 );
 

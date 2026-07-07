@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, LogOut, Settings } from "lucide-react";
+import { Menu, LogOut, Settings, Languages } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 interface TopbarProps {
   fullName: string;
@@ -35,6 +36,7 @@ export function Topbar({
   onMenuClick,
 }: TopbarProps) {
   const router = useRouter();
+  const { t, toggleLang } = useLanguage();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -51,45 +53,57 @@ export function Topbar({
           size="icon"
           className="lg:hidden"
           onClick={onMenuClick}
-          aria-label="فتح القائمة"
+          aria-label="Menu"
         >
           <Menu className="h-5 w-5" />
         </Button>
         <div className="hidden sm:block">
-          <p className="text-sm font-bold text-navy">{schoolName ?? "إسناد"}</p>
+          <p className="text-sm font-bold text-navy">{schoolName ?? t.app.name}</p>
           <p className="text-xs text-muted-foreground">{roleLabel}</p>
         </div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 rounded-full ps-1 pe-2 py-1 transition-colors hover:bg-muted">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback>{getInitials(fullName)}</AvatarFallback>
-            </Avatar>
-            <span className="hidden text-sm font-medium text-navy sm:inline">
-              {fullName}
-            </span>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuLabel>{fullName}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/dashboard/settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              الإعدادات
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-destructive"
-          >
-            <LogOut className="h-4 w-4" />
-            تسجيل الخروج
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleLang}
+          className="gap-1.5"
+        >
+          <Languages className="h-4 w-4" />
+          {t.topbar.language}
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 rounded-full ps-1 pe-2 py-1 transition-colors hover:bg-muted">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback>{getInitials(fullName)}</AvatarFallback>
+              </Avatar>
+              <span className="hidden text-sm font-medium text-navy sm:inline">
+                {fullName}
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuLabel>{fullName}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                {t.topbar.settings}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+              {t.topbar.logout}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

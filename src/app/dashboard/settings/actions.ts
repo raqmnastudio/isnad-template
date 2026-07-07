@@ -4,18 +4,6 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSchoolId } from "@/lib/school";
 
-const DAY_LABELS: Record<string, string> = {
-  sun: "الأحد",
-  mon: "الاثنين",
-  tue: "الثلاثاء",
-  wed: "الأربعاء",
-  thu: "الخميس",
-  fri: "الجمعة",
-  sat: "السبت",
-};
-
-export { DAY_LABELS };
-
 function sectionCode(gradeNumber: number, index: number, type: "numbers" | "letters") {
   if (type === "letters") {
     const letter = String.fromCharCode("A".charCodeAt(0) + index);
@@ -45,7 +33,7 @@ export async function createStage(formData: FormData) {
     section_type: sectionType,
     periods_per_day: periodsPerDay,
     friday_periods: fridayPeriods,
-    working_days: workingDays.length ? workingDays : ["sun", "mon", "tue", "wed", "thu"],
+    working_days: workingDays.length ? workingDays : ["mon", "tue", "wed", "thu", "fri"],
   });
 
   if (error) throw new Error(error.message);
@@ -68,7 +56,7 @@ export async function updateStage(stageId: string, formData: FormData) {
       section_type: sectionType,
       periods_per_day: periodsPerDay,
       friday_periods: fridayPeriods,
-      working_days: workingDays.length ? workingDays : ["sun", "mon", "tue", "wed", "thu"],
+      working_days: workingDays.length ? workingDays : ["mon", "tue", "wed", "thu", "fri"],
     })
     .eq("id", stageId);
 
@@ -175,5 +163,69 @@ export async function deleteBreak(breakId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("breaks").delete().eq("id", breakId);
   if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/settings");
+}
+
+/**
+ * حفظ أوقات كل حصة (عادية + جمعة) لحلقة معيّنة دفعة واحدة.
+ * الحقول المتوقعة: period-{n}-start, period-{n}-end, period-{n}-fri-start, period-{n}-fri-end
+ */
+export async function savePeriodTimes(
+  stageId: string,
+  periodsPerDay: number,
+  fridayPeriods: number,
+  formData: FormData
+) {
+  const schoolId = await getCurrentSchoolId();
+  if (!schoolId) throw new Error("تعذّر تحديد المدرسة");
+
+  const supabase = await createClient();
+
+  const rows: {
+    stage_id: string;
+    school_id: string;
+    period_number: number;
+    is_friday: boolean;
+    start_time: string | null;
+    end_time: string | null;
+  }[] = [];
+
+  for (let p = 1; p <= periodsPerDay; p++) {
+    const start = String(formData.get(`period-${p}-start`) ?? "").trim() || null;
+    const end = String(formData.get(`period-${p}-end`) ?? "").trim() || null;
+    if (start || end) {
+      rows.push({
+        stage_id: stageId,
+        school_id: schoolId,
+        period_number: p,
+        is_friday: false,
+        start_time: start,
+        end_time: end,
+      });
+    }
+  }
+
+  for (let p = 1; p <= fridayPeriods; p++) {
+    const start = String(formData.get(`period-${p}-fri-start`) ?? "").trim() || null;
+    const end = String(formData.get(`period-${p}-fri-end`) ?? "").trim() || null;
+    if (start || end) {
+      rows.push({
+        stage_id: stageId,
+        school_id: schoolId,
+        period_number: p,
+        is_friday: true,
+        start_time: start,
+        end_time: end,
+      });
+    }
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabase
+      .from("period_times")
+      .upsert(rows, { onConflict: "stage_id,period_number,is_friday" });
+    if (error) throw new Error(error.message);
+  }
+
   revalidatePath("/dashboard/settings");
 }

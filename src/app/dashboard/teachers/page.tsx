@@ -28,6 +28,7 @@ export interface ScheduleCell {
 export interface TeacherRow {
   id: string;
   full_name: string;
+  full_name_en: string | null;
   weekly_quota: number;
   substitute_limit: number | null;
   substitute_period: string | null;
@@ -83,7 +84,7 @@ export default async function TeachersPage() {
       supabase
         .from("teachers")
         .select(
-          "id, full_name, weekly_quota, substitute_limit, substitute_period, duty_limit, duty_period"
+          "id, full_name, full_name_en, weekly_quota, substitute_limit, substitute_period, duty_limit, duty_period"
         )
         .eq("school_id", schoolId)
         .order("full_name"),
@@ -113,6 +114,7 @@ export default async function TeachersPage() {
     type TeacherDb = {
       id: string;
       full_name: string;
+      full_name_en: string | null;
       weekly_quota: number;
       substitute_limit: number | null;
       substitute_period: string | null;
@@ -157,6 +159,7 @@ export default async function TeachersPage() {
     teachers = teachersList.map((t) => ({
       id: t.id,
       full_name: t.full_name,
+      full_name_en: t.full_name_en,
       weekly_quota: t.weekly_quota,
       substitute_limit: t.substitute_limit,
       substitute_period: t.substitute_period,

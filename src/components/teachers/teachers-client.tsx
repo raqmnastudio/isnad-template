@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import Link from "next/link";
+import { Plus, Trash2, ChevronDown, ChevronUp, ListChecks } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,26 @@ export function TeachersClient({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* رابط نظام المناوبات التفصيلي (فئات/أوقات/أماكن/إسناد يومي) */}
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-navy/10 text-navy">
+              <ListChecks className="h-[18px] w-[18px]" />
+            </div>
+            <div>
+              <p className="font-bold text-navy">إدارة المناوبات التفصيلية</p>
+              <p className="text-xs text-muted-foreground">
+                فئات أساسية وأنواع فرعية بوقت ومكان، وإسناد معلمة لكل يوم
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/teachers/duties">فتح الصفحة</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* أنواع المناوبات */}
       <DutyTypesManager dutyTypes={dutyTypes} />
 
@@ -109,7 +130,7 @@ function DutyTypesManager({ dutyTypes }: { dutyTypes: DutyTypeOption[] }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>أنواع المناوبات</CardTitle>
+        <CardTitle>أنواع المناوبات (وسوم مبسطة)</CardTitle>
         <Button size="sm" variant="outline" onClick={() => setShowAdd((v) => !v)}>
           <Plus className="h-4 w-4" />
           إضافة نوع
@@ -175,6 +196,11 @@ function AddTeacherForm({
       <div className="flex flex-col gap-2">
         <Label htmlFor="fullName">اسم المعلمة</Label>
         <Input id="fullName" name="fullName" required />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="fullNameEn">الاسم بالإنجليزي (اختياري)</Label>
+        <Input id="fullNameEn" name="fullNameEn" dir="ltr" placeholder="Fatima Ahmed" />
       </div>
 
       <div className="flex flex-col gap-2 sm:w-56">
@@ -285,7 +311,14 @@ function TeacherCard({
     <div className="rounded-lg border border-border">
       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
         <div>
-          <p className="font-bold text-navy">{teacher.full_name}</p>
+          <p className="font-bold text-navy">
+            {teacher.full_name}
+            {teacher.full_name_en && (
+              <span dir="ltr" className="ms-2 text-sm font-normal text-muted-foreground">
+                ({teacher.full_name_en})
+              </span>
+            )}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
             المواد: {teacherSubjects.map((s) => s.name).join("، ") || "—"}
           </p>

@@ -34,6 +34,7 @@ export async function createTeacher(formData: FormData) {
   if (!schoolId) throw new Error("تعذّر تحديد المدرسة");
 
   const fullName = String(formData.get("fullName") ?? "").trim();
+  const fullNameEn = String(formData.get("fullNameEn") ?? "").trim() || null;
   const weeklyQuota = formData.get("weeklyQuota");
   const subjectIds = formData.getAll("subjectIds").map(String);
   const dutyTypeIds = formData.getAll("dutyTypeIds").map(String);
@@ -51,6 +52,7 @@ export async function createTeacher(formData: FormData) {
     .insert({
       school_id: schoolId,
       full_name: fullName,
+      full_name_en: fullNameEn,
       weekly_quota: weeklyQuota ? Number(weeklyQuota) : 24,
       substitute_limit: substituteLimit ? Number(substituteLimit) : null,
       substitute_period: substitutePeriod ? String(substitutePeriod) : null,

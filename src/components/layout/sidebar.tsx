@@ -8,10 +8,12 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/components/layout/nav-items";
 import { createClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/language-context";
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLanguage();
 
   async function handleLogout() {
     const supabase = createClient();
@@ -24,13 +26,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col bg-navy text-white">
       <div className="flex items-center gap-3 px-5 py-6">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg font-extrabold">
-          إس
+          {t.app.name === "إسناد" ? "إس" : "Is"}
         </div>
         <div>
-          <p className="text-lg font-extrabold leading-none">إسناد</p>
-          <p className="mt-1 text-[11px] text-white/60">
-            نظام إدارة النصاب التدريسي
-          </p>
+          <p className="text-lg font-extrabold leading-none">{t.app.name}</p>
+          <p className="mt-1 text-[11px] text-white/60">{t.app.tagline}</p>
         </div>
       </div>
 
@@ -56,7 +56,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span>{item.title}</span>
+              <span>{t.nav[item.key]}</span>
             </Link>
           );
         })}
@@ -68,7 +68,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
         >
           <LogOut className="h-[18px] w-[18px] shrink-0" />
-          <span>تسجيل الخروج</span>
+          <span>{t.nav.logout}</span>
         </button>
       </div>
     </div>

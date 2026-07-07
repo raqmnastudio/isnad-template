@@ -11,18 +11,18 @@ import {
 } from "lucide-react";
 
 export interface NavItem {
-  title: string;
+  key: "dashboard" | "teachers" | "assignments" | "quotas" | "classes" | "subjects" | "reports" | "settings";
   href: string;
   icon: LucideIcon;
 }
 
 export const navItems: NavItem[] = [
-  { title: "لوحة التحكم", href: "/dashboard", icon: LayoutDashboard },
-  { title: "المعلمات", href: "/dashboard/teachers", icon: Users },
-  { title: "التكليفات", href: "/dashboard/assignments", icon: ClipboardList },
-  { title: "النصاب", href: "/dashboard/quotas", icon: Gauge },
-  { title: "الصفوف والشعب", href: "/dashboard/classes", icon: Layers },
-  { title: "المواد", href: "/dashboard/subjects", icon: BookOpen },
-  { title: "التقارير", href: "/dashboard/reports", icon: FileBarChart2 },
-  { title: "الإعدادات", href: "/dashboard/settings", icon: Settings },
+  { key: "dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { key: "teachers", href: "/dashboard/teachers", icon: Users },
+  { key: "assignments", href: "/dashboard/assignments", icon: ClipboardList },
+  { key: "quotas", href: "/dashboard/quotas", icon: Gauge },
+  { key: "classes", href: "/dashboard/classes", icon: Layers },
+  { key: "subjects", href: "/dashboard/subjects", icon: BookOpen },
+  { key: "reports", href: "/dashboard/reports", icon: FileBarChart2 },
+  { key: "settings", href: "/dashboard/settings", icon: Settings },
 ];

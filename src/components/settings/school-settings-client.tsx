@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { StageRow } from "@/app/dashboard/settings/page";
+import { DAY_LABELS } from "@/lib/day-labels";
 import {
   createStage,
   createGradeWithSections,
@@ -16,7 +17,7 @@ import {
   deleteStage,
   deleteGrade,
   deleteBreak,
-  DAY_LABELS,
+  savePeriodTimes,
 } from "@/app/dashboard/settings/actions";
 
 const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri"];
@@ -126,7 +127,7 @@ export function SchoolSettingsClient({ stages }: { stages: StageRow[] }) {
                         type="checkbox"
                         name="workingDays"
                         value={day}
-                        defaultChecked={day !== "fri"}
+                        defaultChecked={day !== "sun"}
                       />
                       {DAY_LABELS[day]}
                     </label>
@@ -328,6 +329,117 @@ function StageDetails({ stage }: { stage: StageRow }) {
           )}
         </CardContent>
       </Card>
+
+      {/* أوقات الحصص */}
+      <PeriodTimesCard stage={stage} />
     </div>
+  );
+}
+
+function PeriodTimesCard({ stage }: { stage: StageRow }) {
+  function timeFor(period: number, isFriday: boolean) {
+    return stage.periodTimes.find(
+      (pt) => pt.period_number === period && pt.is_friday === isFriday
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>أوقات الحصص</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-3 text-xs text-muted-foreground">
+          حدّدي وقت بداية ونهاية كل حصة، ليتمكن النظام من تنبيهك إذا تعارضت
+          مناوبة مع حصة تدريس فعلية لنفس المعلمة.
+        </p>
+        <form
+          action={savePeriodTimes.bind(null, stage.id, stage.periods_per_day, stage.friday_periods)}
+          className="flex flex-col gap-4"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="border border-border bg-muted/50 p-2 text-navy">الحصة</th>
+                  <th className="border border-border bg-muted/50 p-2 text-navy">من (عادي)</th>
+                  <th className="border border-border bg-muted/50 p-2 text-navy">إلى (عادي)</th>
+                  {stage.friday_periods > 0 && (
+                    <>
+                      <th className="border border-border bg-muted/50 p-2 text-navy">من (جمعة)</th>
+                      <th className="border border-border bg-muted/50 p-2 text-navy">إلى (جمعة)</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from(
+                  { length: Math.max(stage.periods_per_day, stage.friday_periods) },
+                  (_, i) => i + 1
+                ).map((p) => (
+                  <tr key={p}>
+                    <td className="border border-border p-2 text-center font-medium text-navy">
+                      {p}
+                    </td>
+                    {p <= stage.periods_per_day ? (
+                      <>
+                        <td className="border border-border p-1">
+                          <input
+                            type="time"
+                            name={`period-${p}-start`}
+                            defaultValue={timeFor(p, false)?.start_time ?? ""}
+                            className="w-full rounded border border-input px-1 py-1 text-xs"
+                          />
+                        </td>
+                        <td className="border border-border p-1">
+                          <input
+                            type="time"
+                            name={`period-${p}-end`}
+                            defaultValue={timeFor(p, false)?.end_time ?? ""}
+                            className="w-full rounded border border-input px-1 py-1 text-xs"
+                          />
+                        </td>
+                      </>
+                    ) : (
+                      stage.friday_periods > 0 && (
+                        <td className="border border-border p-2" colSpan={2} />
+                      )
+                    )}
+                    {stage.friday_periods > 0 &&
+                      (p <= stage.friday_periods ? (
+                        <>
+                          <td className="border border-border p-1">
+                            <input
+                              type="time"
+                              name={`period-${p}-fri-start`}
+                              defaultValue={timeFor(p, true)?.start_time ?? ""}
+                              className="w-full rounded border border-input px-1 py-1 text-xs"
+                            />
+                          </td>
+                          <td className="border border-border p-1">
+                            <input
+                              type="time"
+                              name={`period-${p}-fri-end`}
+                              defaultValue={timeFor(p, true)?.end_time ?? ""}
+                              className="w-full rounded border border-input px-1 py-1 text-xs"
+                            />
+                          </td>
+                        </>
+                      ) : (
+                        <td className="border border-border p-2" colSpan={2} />
+                      ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <Button type="submit" size="sm">
+              حفظ أوقات الحصص
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

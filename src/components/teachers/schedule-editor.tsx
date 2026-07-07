@@ -35,7 +35,7 @@ export function ScheduleEditor({
   const workingDays = useMemo(() => {
     const set = new Set<string>();
     stagesMeta.forEach((s) => s.working_days.forEach((d) => set.add(d)));
-    if (set.size === 0) ["sun", "mon", "tue", "wed", "thu"].forEach((d) => set.add(d));
+    if (set.size === 0) ["mon", "tue", "wed", "thu", "fri"].forEach((d) => set.add(d));
     return DAY_ORDER.filter((d) => set.has(d));
   }, [stagesMeta]);
 

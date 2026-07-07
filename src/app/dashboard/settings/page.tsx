@@ -20,6 +20,13 @@ export interface BreakRow {
   after_period: number;
 }
 
+export interface PeriodTimeRow {
+  period_number: number;
+  is_friday: boolean;
+  start_time: string | null;
+  end_time: string | null;
+}
+
 export interface StageRow {
   id: string;
   name: string;
@@ -29,6 +36,7 @@ export interface StageRow {
   working_days: string[];
   grades: GradeRow[];
   breaks: BreakRow[];
+  periodTimes: PeriodTimeRow[];
 }
 
 export default async function SettingsPage() {
@@ -62,6 +70,11 @@ export default async function SettingsPage() {
       .eq("school_id", schoolId)
       .order("after_period");
 
+    const { data: periodTimesData } = await supabase
+      .from("period_times")
+      .select("stage_id, period_number, is_friday, start_time, end_time")
+      .eq("school_id", schoolId);
+
     type StageDb = {
       id: string;
       name: string;
@@ -73,6 +86,13 @@ export default async function SettingsPage() {
     type GradeDb = { id: string; stage_id: string; grade_number: number; name: string };
     type SectionDb = { id: string; grade_id: string; code: string };
     type BreakDb = { id: string; stage_id: string; name: string; after_period: number };
+    type PeriodTimeDb = {
+      stage_id: string;
+      period_number: number;
+      is_friday: boolean;
+      start_time: string | null;
+      end_time: string | null;
+    };
 
     stages = ((stagesData as StageDb[] | null) ?? []).map((stage) => ({
       ...stage,
@@ -89,6 +109,14 @@ export default async function SettingsPage() {
       breaks: ((breaksData as BreakDb[] | null) ?? [])
         .filter((b) => b.stage_id === stage.id)
         .map((b) => ({ id: b.id, name: b.name, after_period: b.after_period })),
+      periodTimes: ((periodTimesData as PeriodTimeDb[] | null) ?? [])
+        .filter((pt) => pt.stage_id === stage.id)
+        .map((pt) => ({
+          period_number: pt.period_number,
+          is_friday: pt.is_friday,
+          start_time: pt.start_time,
+          end_time: pt.end_time,
+        })),
     }));
   }
 
