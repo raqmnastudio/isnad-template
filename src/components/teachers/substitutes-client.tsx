@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { UserCheck, UserX } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { UserCheck, UserX, CheckCircle2, Trash2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { DAY_LABELS } from "@/lib/day-labels";
 import type {
   SubTeacher,
@@ -13,9 +15,14 @@ import type {
   SubDutyAssignment,
   SubDutySubtype,
   SubPeriodTime,
+  SubstituteRecord,
 } from "@/app/dashboard/teachers/substitutes/page";
+import {
+  confirmSubstitute,
+  deleteSubstituteRecord,
+} from "@/app/dashboard/teachers/substitutes/actions";
 
-const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri"];
+const DAY_CODES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const PERIOD_LABEL: Record<string, string> = { weekly: "أسبوعيًا", monthly: "شهريًا" };
 
 function timesOverlap(
@@ -28,6 +35,32 @@ function timesOverlap(
   return aStart < bEnd && bStart < aEnd;
 }
 
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function dayCodeFromDate(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  return DAY_CODES[d.getDay()];
+}
+
+function weekRange(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  const start = new Date(d);
+  start.setDate(d.getDate() - d.getDay());
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+}
+
+function monthRange(iso: string) {
+  const [y, m] = iso.split("-").map(Number);
+  const start = `${y}-${String(m).padStart(2, "0")}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  return { start, end };
+}
+
 interface Props {
   teachers: SubTeacher[];
   schedule: SubScheduleCell[];
@@ -36,6 +69,7 @@ interface Props {
   dutyAssignments: SubDutyAssignment[];
   dutySubtypes: SubDutySubtype[];
   periodTimes: SubPeriodTime[];
+  substituteRecords: SubstituteRecord[];
 }
 
 export function SubstitutesClient({
@@ -46,9 +80,14 @@ export function SubstitutesClient({
   dutyAssignments,
   dutySubtypes,
   periodTimes,
+  substituteRecords,
 }: Props) {
   const [absentId, setAbsentId] = useState("");
-  const [day, setDay] = useState("");
+  const [date, setDate] = useState(todayIso());
+  const [isPending, startTransition] = useTransition();
+  const [confirmedKey, setConfirmedKey] = useState<string | null>(null);
+
+  const day = date ? dayCodeFromDate(date) : "";
 
   const absentPeriods = useMemo(() => {
     if (!absentId || !day) return [];
@@ -95,8 +134,51 @@ export function SubstitutesClient({
       }
     }
 
+    const alreadySubForThisSlot = substituteRecords.some(
+      (r) => r.substituteTeacherId === teacherId && r.recordDate === date && r.period === period
+    );
+    if (alreadySubForThisSlot) {
+      return { busy: true, reason: "معتمدة احتياط لحصة أخرى بنفس الوقت اليوم" };
+    }
+
     return { busy: false, reason: "" };
   }
+
+  function usageCount(teacher: SubTeacher) {
+    if (!teacher.substitute_limit) return null;
+    const period = teacher.substitute_period ?? "weekly";
+    const range = period === "monthly" ? monthRange(date) : weekRange(date);
+    const count = substituteRecords.filter(
+      (r) =>
+        r.substituteTeacherId === teacher.id &&
+        r.recordDate >= range.start &&
+        r.recordDate <= range.end
+    ).length;
+    return { count, limit: teacher.substitute_limit, period };
+  }
+
+  function handleConfirm(
+    substituteTeacherId: string,
+    cell: { period: number; sectionId: string | null; subjectId: string | null }
+  ) {
+    const key = `${substituteTeacherId}-${cell.period}`;
+    startTransition(async () => {
+      await confirmSubstitute({
+        substituteTeacherId,
+        absentTeacherId: absentId,
+        recordDate: date,
+        day,
+        period: cell.period,
+        sectionId: cell.sectionId,
+        subjectId: cell.subjectId,
+      });
+      setConfirmedKey(key);
+    });
+  }
+
+  const dayRecords = substituteRecords
+    .filter((r) => r.recordDate === date)
+    .sort((a, b) => a.period - b.period);
 
   return (
     <div className="flex flex-col gap-6">
@@ -122,19 +204,11 @@ export function SubstitutesClient({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label>اليوم</Label>
-            <select
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              className="h-11 rounded-md border border-input bg-white px-3 text-sm"
-            >
-              <option value="">اختاري اليوم</option>
-              {DAYS.map((d) => (
-                <option key={d} value={d}>
-                  {DAY_LABELS[d]}
-                </option>
-              ))}
-            </select>
+            <Label>التاريخ</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            {date && (
+              <p className="text-xs text-muted-foreground">اليوم: {DAY_LABELS[day] ?? day}</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -156,6 +230,11 @@ export function SubstitutesClient({
                 const section = sections.find((s) => s.id === cell.sectionId);
                 const subject = subjects.find((s) => s.id === cell.subjectId);
                 const periodTime = getPeriodTime(cell.sectionId, cell.period);
+
+                const alreadyAssigned = substituteRecords.find(
+                  (r) =>
+                    r.recordDate === date && r.period === cell.period && r.absentTeacherId === absentId
+                );
 
                 const results = teachers
                   .filter((t) => t.id !== absentId)
@@ -183,6 +262,16 @@ export function SubstitutesClient({
                       )}
                     </div>
 
+                    {alreadyAssigned && (
+                      <div className="mb-3 flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                        <CheckCircle2 className="h-4 w-4" />
+                        تم اعتماد{" "}
+                        {teachers.find((t) => t.id === alreadyAssigned.substituteTeacherId)
+                          ?.full_name ?? "—"}{" "}
+                        لهذي الحصة.
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <p className="mb-2 flex items-center gap-1.5 text-sm font-bold text-emerald-700">
@@ -195,27 +284,53 @@ export function SubstitutesClient({
                           </p>
                         ) : (
                           <div className="flex flex-col gap-1.5">
-                            {available.map((r) => (
-                              <div
-                                key={r.teacher.id}
-                                className="rounded-md bg-emerald-50 px-3 py-2 text-sm"
-                              >
-                                <span className="font-medium text-navy">
-                                  {r.teacher.full_name}
-                                </span>
-                                {r.teacher.full_name_en && (
-                                  <span dir="ltr" className="ms-1 text-xs text-muted-foreground">
-                                    ({r.teacher.full_name_en})
-                                  </span>
-                                )}
-                                {r.teacher.substitute_limit != null && (
-                                  <span className="block text-xs text-muted-foreground">
-                                    حدها الأقصى للاحتياط: {r.teacher.substitute_limit}{" "}
-                                    {PERIOD_LABEL[r.teacher.substitute_period ?? "weekly"]}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
+                            {available.map((r) => {
+                              const usage = usageCount(r.teacher);
+                              const atLimit = usage ? usage.count >= usage.limit : false;
+                              const key = `${r.teacher.id}-${cell.period}`;
+                              return (
+                                <div
+                                  key={r.teacher.id}
+                                  className="flex items-center justify-between gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm"
+                                >
+                                  <div>
+                                    <span className="font-medium text-navy">
+                                      {r.teacher.full_name}
+                                    </span>
+                                    {r.teacher.full_name_en && (
+                                      <span dir="ltr" className="ms-1 text-xs text-muted-foreground">
+                                        ({r.teacher.full_name_en})
+                                      </span>
+                                    )}
+                                    {usage && (
+                                      <span
+                                        className={`block text-xs ${
+                                          atLimit ? "text-destructive" : "text-muted-foreground"
+                                        }`}
+                                      >
+                                        الاستخدام: {usage.count}/{usage.limit}{" "}
+                                        {PERIOD_LABEL[usage.period]}
+                                        {atLimit && " — بلغت الحد الأقصى"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={isPending || Boolean(alreadyAssigned)}
+                                    onClick={() =>
+                                      handleConfirm(r.teacher.id, {
+                                        period: cell.period,
+                                        sectionId: cell.sectionId,
+                                        subjectId: cell.subjectId,
+                                      })
+                                    }
+                                  >
+                                    {confirmedKey === key ? "تم" : "اعتماد"}
+                                  </Button>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -243,6 +358,34 @@ export function SubstitutesClient({
                 );
               })
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {dayRecords.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>سجل الاحتياط المعتمد ليوم {date}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col divide-y divide-border">
+            {dayRecords.map((r) => {
+              const substitute = teachers.find((t) => t.id === r.substituteTeacherId);
+              const absent = teachers.find((t) => t.id === r.absentTeacherId);
+              return (
+                <div key={r.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                  <p>
+                    <span className="font-medium text-navy">{substitute?.full_name}</span> غطّت
+                    حصة <span className="font-medium text-navy">{absent?.full_name}</span> — الحصة{" "}
+                    {r.period}
+                  </p>
+                  <form action={deleteSubstituteRecord.bind(null, r.id)}>
+                    <Button variant="ghost" size="icon" className="text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </form>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}

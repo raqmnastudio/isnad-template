@@ -48,6 +48,17 @@ export interface SubPeriodTime {
   end: string | null;
 }
 
+export interface SubstituteRecord {
+  id: string;
+  substituteTeacherId: string;
+  absentTeacherId: string;
+  recordDate: string;
+  day: string;
+  period: number;
+  sectionId: string | null;
+  subjectId: string | null;
+}
+
 export default async function SubstitutesPage() {
   const schoolId = await getCurrentSchoolId();
   const supabase = await createClient();
@@ -59,6 +70,7 @@ export default async function SubstitutesPage() {
   let dutyAssignments: SubDutyAssignment[] = [];
   let dutySubtypes: SubDutySubtype[] = [];
   let periodTimes: SubPeriodTime[] = [];
+  let substituteRecords: SubstituteRecord[] = [];
 
   if (schoolId) {
     const [
@@ -71,6 +83,7 @@ export default async function SubstitutesPage() {
       dutyAssignmentsRes,
       dutySubtypesRes,
       periodTimesRes,
+      substituteRecordsRes,
     ] = await Promise.all([
       supabase
         .from("teachers")
@@ -96,6 +109,12 @@ export default async function SubstitutesPage() {
       supabase
         .from("period_times")
         .select("stage_id, period_number, is_friday, start_time, end_time")
+        .eq("school_id", schoolId),
+      supabase
+        .from("substitute_records")
+        .select(
+          "id, substitute_teacher_id, absent_teacher_id, record_date, day, period_number, section_id, subject_id"
+        )
         .eq("school_id", schoolId),
     ]);
 
@@ -162,6 +181,30 @@ export default async function SubstitutesPage() {
       start: p.start_time,
       end: p.end_time,
     }));
+
+    substituteRecords = (
+      (substituteRecordsRes.data as
+        | {
+            id: string;
+            substitute_teacher_id: string;
+            absent_teacher_id: string;
+            record_date: string;
+            day: string;
+            period_number: number;
+            section_id: string | null;
+            subject_id: string | null;
+          }[]
+        | null) ?? []
+    ).map((r) => ({
+      id: r.id,
+      substituteTeacherId: r.substitute_teacher_id,
+      absentTeacherId: r.absent_teacher_id,
+      recordDate: r.record_date,
+      day: r.day,
+      period: r.period_number,
+      sectionId: r.section_id,
+      subjectId: r.subject_id,
+    }));
   }
 
   return (
@@ -183,6 +226,7 @@ export default async function SubstitutesPage() {
         dutyAssignments={dutyAssignments}
         dutySubtypes={dutySubtypes}
         periodTimes={periodTimes}
+        substituteRecords={substituteRecords}
       />
     </div>
   );
