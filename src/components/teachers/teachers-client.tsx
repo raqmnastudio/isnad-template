@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, ChevronDown, ChevronUp, ListChecks } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, ListChecks, UserCog } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +71,25 @@ export function TeachersClient({
           </div>
           <Button asChild variant="outline" size="sm">
             <Link href="/dashboard/teachers/duties">فتح الصفحة</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-navy/10 text-navy">
+              <UserCog className="h-[18px] w-[18px]" />
+            </div>
+            <div>
+              <p className="font-bold text-navy">الاحتياط</p>
+              <p className="text-xs text-muted-foreground">
+                اقتراح معلمات فاضيات لتغطية حصص معلمة غائبة تلقائيًا
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/teachers/substitutes">فتح الصفحة</Link>
           </Button>
         </CardContent>
       </Card>
