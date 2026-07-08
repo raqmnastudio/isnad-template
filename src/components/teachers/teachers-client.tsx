@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, ChevronDown, ChevronUp, ListChecks, UserCog } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, ListChecks, UserCog, FileSpreadsheet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,25 @@ export function TeachersClient({
   return (
     <div className="flex flex-col gap-6">
       {/* رابط نظام المناوبات التفصيلي (فئات/أوقات/أماكن/إسناد يومي) */}
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-navy/10 text-navy">
+              <FileSpreadsheet className="h-[18px] w-[18px]" />
+            </div>
+            <div>
+              <p className="font-bold text-navy">استيراد من إكسل</p>
+              <p className="text-xs text-muted-foreground">
+                أضيفي كل المعلمات وجداولهن الأسبوعي دفعة واحدة من ملف إكسل
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/teachers/import">فتح الصفحة</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="flex items-center gap-3">
